@@ -20,8 +20,6 @@ public class DataInitializer implements CommandLineRunner {
         seedRole("Personal de Apoyo", "Voluntario que asiste a los locales de recepción para ayudar en la entrega y atención de personas afectadas");
         seedRole("TrabajadorCentroAcopio", "Personal que gestiona el centro de acopio");
         seedRole("Organizacion", "Entidad organizadora responsable de la campaña");
-        seedRole("Receptor", "ONG, comedor social u organización que solicita y recibe ayuda para personas afectadas");
-        seedRole("Administrador", "Usuario con permisos de administración del sistema");
     }
 
     private void seedRole(String nombre, String descripcion) {

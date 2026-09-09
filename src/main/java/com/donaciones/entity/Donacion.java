@@ -1,11 +1,8 @@
 package com.donaciones.entity;
 
-import com.donaciones.enums.EstadoDonacion;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -13,80 +10,78 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@Builder
 @Entity
-@Table(name = "donaciones")
+@Table(name = "donacion")
 public class Donacion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_donacion")
-    private Long idDonacion;
+    @Column(name = "id_Donacion")
+    private Integer idDonacion;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_usuario_donante", nullable = false)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Usuario donante;
+    @Column(name = "codigoSeguimiento", nullable = false, unique = true, length = 15)
+    private String codigoSeguimiento;
+
+    @Column(name = "fechaRegistro", nullable = false, updatable = false)
+    private LocalDateTime fechaRegistro;
+
+    @Column(name = "fechaExpiracion")
+    private LocalDateTime fechaExpiracion;
+
+    @Column(name = "fechaVerificacion")
+    private LocalDateTime fechaVerificacion;
+
+    @Column(name = "estadoActual", nullable = false, length = 25)
+    private String estadoActual;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_local_destino", nullable = true)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private LocalRecepcion localDestino;
+    @JoinColumn(name = "id_Usuario", nullable = false)
+    private Usuario usuario;
 
-    @Column(name = "fecha_donacion", nullable = false, updatable = false)
-    private LocalDateTime fechaDonacion;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_LocalRecepcion", nullable = false)
+    private LocalRecepcion localRecepcion;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "estado", nullable = false, length = 20)
-    private EstadoDonacion estado;
-
-    @Column(name = "descripcion_general", nullable = false, length = 500)
-    private String descripcionGeneral;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_Trabajador", nullable = true)
+    private Trabajador trabajador;
 
     @Builder.Default
     @OneToMany(mappedBy = "donacion", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<ItemDonacion> items = new ArrayList<>();
+    private List<DetalleDonacion> detalles = new ArrayList<>();
 
-    @Builder.Default
-    @OneToMany(mappedBy = "donacion", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<EstadoDonacionHistory> historialEstados = new ArrayList<>();
-
-    @Builder.Default
-    @OneToMany(mappedBy = "donacion", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<LogisticaEnvio> envios = new ArrayList<>();
-
-    public void addItem(ItemDonacion item) {
-        items.add(item);
-        item.setDonacion(this);
+    @PrePersist
+    public void prePersist() {
+        if (fechaRegistro == null) {
+            fechaRegistro = LocalDateTime.now();
+        }
     }
 
-    public void removeItem(ItemDonacion item) {
-        items.remove(item);
-        item.setDonacion(null);
+    public void addDetalle(DetalleDonacion detalle) {
+        detalles.add(detalle);
+        detalle.setDonacion(this);
+    }
+
+    public void removeDetalle(DetalleDonacion detalle) {
+        detalles.remove(detalle);
+        detalle.setDonacion(null);
     }
 
 }
