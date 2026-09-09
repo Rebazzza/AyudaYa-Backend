@@ -1,4 +1,4 @@
-package com.ayudaya;
+package com.donaciones;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

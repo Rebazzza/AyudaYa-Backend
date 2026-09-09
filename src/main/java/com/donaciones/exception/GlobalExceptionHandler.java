@@ -1,0 +1,65 @@
+package com.donaciones.exception;
+
+import com.donaciones.dto.ApiResponseDTO;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.stream.Collectors;
+
+@Slf4j
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleResourceNotFound(ResourceNotFoundException ex,
+                                                                      HttpServletRequest request) {
+        return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleDuplicateResource(DuplicateResourceException ex,
+                                                                        HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleInvalidCredentials(InvalidCredentialsException ex,
+                                                                         HttpServletRequest request) {
+        return buildError(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+                                                                             HttpServletRequest request) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        return buildError(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleMessageNotReadable(HttpMessageNotReadableException ex,
+                                                                         HttpServletRequest request) {
+        return buildError(HttpStatus.BAD_REQUEST, "El cuerpo de la solicitud no es válido o está vacío", request);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleGenericException(Exception ex, HttpServletRequest request) {
+        log.error("Error no controlado en la petición {}", request.getRequestURI(), ex);
+        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error interno en el servidor", request);
+    }
+
+    private ResponseEntity<ApiResponseDTO<Void>> buildError(HttpStatus status, String message,
+                                                            HttpServletRequest request) {
+        ApiResponseDTO<Void> body = ApiResponseDTO.error(status, message, request.getRequestURI(),
+                status.getReasonPhrase());
+        return ResponseEntity.status(status).body(body);
+    }
+
+}
