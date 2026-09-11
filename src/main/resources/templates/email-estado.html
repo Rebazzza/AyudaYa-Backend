@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AyudaYa - Notificación de Estado</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f5; font-family:Helvetica, Arial, sans-serif; font-size:14px; color:#1f2937;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5; padding:24px 12px;">
+    <tr>
+        <td align="center">
+            <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+                   style="max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+
+                <tr>
+                    <td style="background-color:#FF7717; padding:24px 32px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="color:#ffffff; font-size:24px; font-weight:bold; letter-spacing:1px;">AyudaYa</td>
+                                <td align="right" style="color:#fff3e6; font-size:12px;">Donaciones con impacto real</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:32px;">
+                        <p style="margin:0 0 16px; font-size:16px;">Hola, <strong th:text="${nombreDonante}">Donante</strong>.</p>
+                        <p style="margin:0 0 8px;">Tu donación <strong style="color:#FF7717;" th:text="${codigoSeguimiento}">DON-XXXX</strong>
+                            ha cambiado de estado.</p>
+                        <p style="margin:0 0 24px;">Nuevo estado: <strong th:text="${nuevoEstado}">EN_ALMACEN</strong>
+                            <span th:if="${nombreLocal != null}">· Centro de acopio: <strong th:text="${nombreLocal}">-</strong></span>
+                        </p>
+
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                               style="border:1px solid #ffe1c7; border-left:6px solid #FF7717; border-radius:8px; background-color:#fff8f1; padding:16px; margin-bottom:24px;">
+                            <tr>
+                                <td style="font-size:13px; color:#7c674e;">
+                                    Si entregaste tu donación, puedes seguir la ruta de tus cajas con el código QR que recibiste.
+                                    Comparte este código con quien necesite consultar el estado.
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td align="center">
+                                    <a th:href="${urlSeguimiento}"
+                                       style="display:inline-block; background-color:#FF7717; color:#ffffff; text-decoration:none; padding:14px 32px; border-radius:50px; font-weight:bold; font-size:14px;"
+                                       target="_blank">Ver seguimiento de la donación</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="background-color:#fafafa; padding:20px 32px; border-top:1px solid #eeeeee;">
+                        <p style="margin:0; font-size:12px; color:#6b7280; text-align:center;">
+                            AyudaYa · Plataforma de donaciones de emergencia<br>
+                            Este es un correo automático, por favor no respondas a este mensaje.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

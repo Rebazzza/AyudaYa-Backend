@@ -41,6 +41,12 @@ public class HistorialEstado {
     @Column(name = "observacionHistorial", length = 255)
     private String observacionHistorial;
 
+    @Column(name = "latitud")
+    private Double latitud;
+
+    @Column(name = "longitud")
+    private Double longitud;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_Donacion", nullable = false)
     private Donacion donacion;

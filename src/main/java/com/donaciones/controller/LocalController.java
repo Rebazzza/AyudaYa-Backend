@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -69,6 +70,16 @@ public class LocalController {
         LocalResponse local = localService.update(id, request);
         ApiResponseDTO<LocalResponse> body = ApiResponseDTO.success(HttpStatus.OK,
                 "Local actualizado exitosamente", servletRequest.getRequestURI(), local);
+        return ResponseEntity.ok(body);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Eliminar local de recepción",
+            description = "Elimina un local. Responde 409 si el local aún está vinculado a trabajadores o donaciones.")
+    public ResponseEntity<ApiResponseDTO<Void>> delete(@PathVariable Long id, HttpServletRequest servletRequest) {
+        localService.delete(id);
+        ApiResponseDTO<Void> body = ApiResponseDTO.success(HttpStatus.OK,
+                "Local eliminado exitosamente", servletRequest.getRequestURI(), null);
         return ResponseEntity.ok(body);
     }
 

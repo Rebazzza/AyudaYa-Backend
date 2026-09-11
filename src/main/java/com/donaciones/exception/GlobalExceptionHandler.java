@@ -3,6 +3,7 @@ package com.donaciones.exception;
 import com.donaciones.dto.ApiResponseDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -34,6 +35,11 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponseDTO<Void>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
                                                                              HttpServletRequest request) {
@@ -47,6 +53,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponseDTO<Void>> handleMessageNotReadable(HttpMessageNotReadableException ex,
                                                                          HttpServletRequest request) {
         return buildError(HttpStatus.BAD_REQUEST, "El cuerpo de la solicitud no es válido o está vacío", request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleDataIntegrity(DataIntegrityViolationException ex,
+                                                                    HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT,
+                "La operación no se pudo completar porque el registro está relacionado con otros datos", request);
     }
 
     @ExceptionHandler(Exception.class)

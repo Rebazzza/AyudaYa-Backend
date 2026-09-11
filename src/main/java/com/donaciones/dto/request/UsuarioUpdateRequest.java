@@ -2,6 +2,7 @@ package com.donaciones.dto.request;
 
 import com.donaciones.enums.RolRegistrable;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -39,8 +40,7 @@ public class UsuarioUpdateRequest {
     @Size(max = 100, message = "El correo no debe superar los 100 caracteres")
     private String correoUsuario;
 
-    @Schema(example = "NuevaPassword123", description = "Opcional. Si se envía, se encripta y reemplaza la contraseña actual.")
-    @Size(min = 8, max = 100, message = "La contraseña debe tener entre 8 y 100 caracteres")
+    @Schema(example = "NuevaPassword123", description = "Opcional. Si se envía (y no está vacía), se encripta y reemplaza la contraseña actual.")
     private String contraseña;
 
     @Schema(example = "987654321")
@@ -50,5 +50,12 @@ public class UsuarioUpdateRequest {
 
     @Schema(example = "DONANTE", description = "Opcional. Si se envía, cambia el rol del usuario (DONANTE o PERSONAL_APOYO).")
     private RolRegistrable tipoRegistro;
+
+    @AssertTrue(message = "La contraseña debe tener entre 8 y 100 caracteres si se proporciona")
+    private boolean isContraseñaValida() {
+        return contraseña == null
+                || contraseña.isBlank()
+                || (contraseña.length() >= 8 && contraseña.length() <= 100);
+    }
 
 }

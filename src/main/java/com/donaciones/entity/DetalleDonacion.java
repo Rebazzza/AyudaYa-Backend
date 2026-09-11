@@ -44,6 +44,9 @@ public class DetalleDonacion {
     @Column(name = "fechaVencimiento")
     private LocalDateTime fechaVencimiento;
 
+    @Column(name = "observacionDetalle", length = 50)
+    private String observacionDetalle;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_Donacion", nullable = false)
     private Donacion donacion;

@@ -45,8 +45,7 @@ public class LocalService {
 
     @Transactional
     public LocalResponse update(Long id, LocalRequest request) {
-        LocalRecepcion local = localRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el local con id " + id));
+        LocalRecepcion local = findByIdOrThrow(id);
         local.setNombreLocal(request.getNombreLocal());
         local.setDireccionLocal(request.getDireccionLocal());
         local.setLatitud(request.getLatitud());
@@ -54,6 +53,17 @@ public class LocalService {
         local.setCapacidadLocalM3(request.getCapacidadLocalM3());
         local.setTelefonoLocal(request.getTelefonoLocal());
         return toResponse(localRepository.save(local));
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        LocalRecepcion local = findByIdOrThrow(id);
+        localRepository.delete(local);
+    }
+
+    private LocalRecepcion findByIdOrThrow(Long id) {
+        return localRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el local con id " + id));
     }
 
     private LocalResponse toResponse(LocalRecepcion local) {

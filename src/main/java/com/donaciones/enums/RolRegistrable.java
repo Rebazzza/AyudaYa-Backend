@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 public enum RolRegistrable {
 
     DONANTE("Donante"),
-    PERSONAL_APOYO("Personal de Apoyo");
+    PERSONAL_APOYO("Personal de Apoyo"),
+    ADMINISTRADOR("Administrador");
 
     private final String nombreRol;
 

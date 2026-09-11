@@ -3,6 +3,7 @@ package com.donaciones.repository;
 import com.donaciones.entity.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
@@ -16,5 +17,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     boolean existsByCorreoUsuarioAndIdUsuarioNot(String correoUsuario, Long idUsuario);
 
     boolean existsByDniUsuarioAndIdUsuarioNot(String dniUsuario, Long idUsuario);
+
+    List<Usuario> findByRolNombreRol(String nombreRol);
 
 }
