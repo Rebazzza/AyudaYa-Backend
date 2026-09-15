@@ -11,4 +11,7 @@ public interface DetalleDonacionRepository extends JpaRepository<DetalleDonacion
 
     List<DetalleDonacion> findByDonacionEstadoActualAndDonacionLocalRecepcionIdLocal(String estado, Long idLocal);
 
+    List<DetalleDonacion> findByDonacionEstadoActualAndDonacionLocalRecepcionIdLocalAndCategoriaIdCategoria(
+            String estado, Long idLocal, Integer idCategoria);
+
 }
