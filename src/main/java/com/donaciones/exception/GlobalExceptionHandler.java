@@ -10,6 +10,9 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.stream.Collectors;
 
@@ -60,6 +63,27 @@ public class GlobalExceptionHandler {
                                                                     HttpServletRequest request) {
         return buildError(HttpStatus.CONFLICT,
                 "La operación no se pudo completar porque el registro está relacionado con otros datos", request);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleMaxUploadSize(MaxUploadSizeExceededException ex,
+                                                                   HttpServletRequest request) {
+        return buildError(HttpStatus.PAYLOAD_TOO_LARGE,
+                "El archivo enviado supera el tamaño máximo permitido", request);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleMissingPart(MissingServletRequestPartException ex,
+                                                                  HttpServletRequest request) {
+        return buildError(HttpStatus.BAD_REQUEST,
+                "Falta el archivo requerido '" + ex.getRequestPartName() + "' en la solicitud", request);
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiResponseDTO<Void>> handleMultipart(MultipartException ex, HttpServletRequest request) {
+        log.error("Error al procesar el archivo enviado en la petición {}", request.getRequestURI(), ex);
+        return buildError(HttpStatus.BAD_REQUEST,
+                "No se pudo procesar el archivo enviado: verifique el tamaño y el formato", request);
     }
 
     @ExceptionHandler(Exception.class)

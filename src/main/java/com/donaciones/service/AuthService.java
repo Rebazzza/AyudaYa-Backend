@@ -46,6 +46,7 @@ public class AuthService {
         Usuario usuario = Usuario.builder()
                 .rol(rol)
                 .dniUsuario(request.getDniUsuario())
+                .dniVerificado(false)
                 .nombreUsuario(request.getNombreUsuario())
                 .apellidosUsuario(request.getApellidosUsuario())
                 .correoUsuario(request.getCorreoUsuario())

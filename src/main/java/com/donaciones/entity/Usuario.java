@@ -41,6 +41,10 @@ public class Usuario {
     @Column(name = "dniUsuario", nullable = false, unique = true, length = 8)
     private String dniUsuario;
 
+    @Builder.Default
+    @Column(name = "dniVerificado", nullable = false)
+    private Boolean dniVerificado = false;
+
     @Column(name = "nombreUsuario", nullable = false, length = 50)
     private String nombreUsuario;
 
