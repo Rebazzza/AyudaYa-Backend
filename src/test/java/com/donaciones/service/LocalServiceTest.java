@@ -39,6 +39,7 @@ class LocalServiceTest {
     @Test
     @DisplayName("Registra el local con dirección y capacidad máxima, y queda activo por defecto")
     void registrarLocal_guardaDireccionYCapacidadYActivaPorDefecto() {
+
         when(localRepository.save(any(LocalRecepcion.class))).thenAnswer(invocacion -> {
             LocalRecepcion local = invocacion.getArgument(0);
             local.setIdLocal(1L);
@@ -46,7 +47,7 @@ class LocalServiceTest {
         });
 
         LocalResponse response = localService.create(localNuevo());
-
+        
         assertThat(response.getIdLocal()).isEqualTo(1L);
         assertThat(response.getDireccionLocal()).isEqualTo(DIRECCION);
         assertThat(response.getCapacidadLocalM3()).isEqualTo(CAPACIDAD_MAXIMA);
