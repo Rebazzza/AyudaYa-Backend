@@ -4,6 +4,8 @@ import com.donaciones.dto.ApiResponseDTO;
 import com.donaciones.dto.request.CorroboracionRequestDTO;
 import com.donaciones.dto.response.AlertaCaducidadDTO;
 import com.donaciones.dto.response.DonacionResponse;
+import com.donaciones.dto.response.PaginaDTO;
+import com.donaciones.dto.response.ProductoInventarioDTO;
 import com.donaciones.dto.response.ResumenInventarioDTO;
 import com.donaciones.service.AlmacenService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -50,6 +53,26 @@ public class AlmacenController {
         List<ResumenInventarioDTO> inventario = almacenService.obtenerInventarioPorLocal(idLocal);
         ApiResponseDTO<List<ResumenInventarioDTO>> body = ApiResponseDTO.success(HttpStatus.OK,
                 "Inventario obtenido exitosamente", servletRequest.getRequestURI(), inventario);
+        return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/inventario/{idLocal}/productos")
+    @Operation(summary = "Buscar productos del inventario",
+            description = "Lista paginada de productos en el local (donaciones EN_ALMACEN). Busca por coincidencia de texto en el "
+                    + "nombre de la categoría o la descripción del producto y combina filtros por categoría y estado de "
+                    + "conservación (VIGENTE, POR_VENCER, VENCIDO, SIN_VENCIMIENTO). Consulta la base de datos en cada petición.")
+    public ResponseEntity<ApiResponseDTO<PaginaDTO<ProductoInventarioDTO>>> buscarProductos(
+            @PathVariable Long idLocal,
+            @RequestParam(required = false) String busqueda,
+            @RequestParam(required = false) Integer idCategoria,
+            @RequestParam(required = false) String estadoConservacion,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanio,
+            HttpServletRequest servletRequest) {
+        PaginaDTO<ProductoInventarioDTO> productos = almacenService.buscarProductosInventario(
+                idLocal, busqueda, idCategoria, estadoConservacion, pagina, tamanio);
+        ApiResponseDTO<PaginaDTO<ProductoInventarioDTO>> body = ApiResponseDTO.success(HttpStatus.OK,
+                "Productos del inventario obtenidos exitosamente", servletRequest.getRequestURI(), productos);
         return ResponseEntity.ok(body);
     }
 
