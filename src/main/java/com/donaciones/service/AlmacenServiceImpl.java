@@ -4,6 +4,8 @@ import com.donaciones.dto.request.CorroboracionRequestDTO;
 import com.donaciones.dto.request.ItemCorroboracionRequestDTO;
 import com.donaciones.dto.response.AlertaCaducidadDTO;
 import com.donaciones.dto.response.DonacionResponse;
+import com.donaciones.dto.response.PaginaDTO;
+import com.donaciones.dto.response.ProductoInventarioDTO;
 import com.donaciones.dto.response.ResumenInventarioDTO;
 import com.donaciones.entity.CategoriaInsumo;
 import com.donaciones.entity.DetalleDonacion;
@@ -13,6 +15,7 @@ import com.donaciones.entity.LocalRecepcion;
 import com.donaciones.entity.Notificacion;
 import com.donaciones.entity.Trabajador;
 import com.donaciones.entity.Usuario;
+import com.donaciones.enums.EstadoConservacion;
 import com.donaciones.exception.BadRequestException;
 import com.donaciones.exception.ResourceNotFoundException;
 import com.donaciones.repository.DetalleDonacionRepository;
@@ -27,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
@@ -45,6 +49,7 @@ public class AlmacenServiceImpl implements AlmacenService {
     private static final String EXCEDENTE = "Excedente";
     private static final String FALTANTE = "Faltante";
     private static final long DIAS_ALERTA_CADUCIDAD = 15;
+    private static final int MAX_TAMANIO_PAGINA = 100;
 
     private final DonacionRepository donacionRepository;
     private final LocalRecepcionRepository localRepository;
@@ -148,6 +153,100 @@ public class AlmacenServiceImpl implements AlmacenService {
                         .build())
                 .sorted(Comparator.comparing(AlertaCaducidadDTO::getFechaVencimiento))
                 .toList();
+    }
+
+    // ponytail: filtra y pagina en memoria sobre los productos EN_ALMACEN del local, como el resto del inventario;
+    // si el volumen crece, mover filtros y paginación a una consulta con Pageable.
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaDTO<ProductoInventarioDTO> buscarProductosInventario(
+            Long idLocal, String busqueda, Integer idCategoria, String estadoConservacion, int pagina, int tamanio) {
+        if (pagina < 0) {
+            throw new BadRequestException("La página debe ser mayor o igual a 0");
+        }
+        if (tamanio < 1 || tamanio > MAX_TAMANIO_PAGINA) {
+            throw new BadRequestException("El tamaño de página debe estar entre 1 y " + MAX_TAMANIO_PAGINA);
+        }
+        findLocal(idLocal);
+        EstadoConservacion estadoFiltro = parseEstadoConservacion(estadoConservacion);
+        String texto = normalizar(busqueda);
+        LocalDateTime ahora = LocalDateTime.now();
+
+        List<ProductoInventarioDTO> coincidencias = detalleRepository
+                .findByDonacionEstadoActualAndDonacionLocalRecepcionIdLocal(ESTADO_EN_ALMACEN, idLocal)
+                .stream()
+                .filter(detalle -> idCategoria == null || idCategoria.equals(detalle.getCategoria().getIdCategoria()))
+                .filter(detalle -> texto.isEmpty()
+                        || normalizar(detalle.getCategoria().getNombreCategoria()).contains(texto)
+                        || normalizar(detalle.getDescripcionDetalle()).contains(texto))
+                .filter(detalle -> estadoFiltro == null
+                        || estadoFiltro == clasificarConservacion(detalle.getFechaVencimiento(), ahora))
+                .sorted(Comparator
+                        .comparing((DetalleDonacion detalle) -> normalizar(detalle.getCategoria().getNombreCategoria()))
+                        .thenComparing(detalle -> normalizar(detalle.getDescripcionDetalle()))
+                        .thenComparing(DetalleDonacion::getIdDetalle))
+                .map(detalle -> toProductoInventario(detalle, ahora))
+                .toList();
+
+        int desde = (int) Math.min((long) pagina * tamanio, coincidencias.size());
+        int hasta = Math.min(desde + tamanio, coincidencias.size());
+        return PaginaDTO.<ProductoInventarioDTO>builder()
+                .contenido(coincidencias.subList(desde, hasta))
+                .pagina(pagina)
+                .tamanio(tamanio)
+                .totalElementos(coincidencias.size())
+                .totalPaginas((coincidencias.size() + tamanio - 1) / tamanio)
+                .build();
+    }
+
+    private EstadoConservacion parseEstadoConservacion(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        try {
+            return EstadoConservacion.valueOf(valor.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Estado de conservación inválido: " + valor
+                    + ". Valores permitidos: VIGENTE, POR_VENCER, VENCIDO, SIN_VENCIMIENTO");
+        }
+    }
+
+    private EstadoConservacion clasificarConservacion(LocalDateTime fechaVencimiento, LocalDateTime ahora) {
+        if (fechaVencimiento == null) {
+            return EstadoConservacion.SIN_VENCIMIENTO;
+        }
+        if (fechaVencimiento.isBefore(ahora)) {
+            return EstadoConservacion.VENCIDO;
+        }
+        if (ChronoUnit.DAYS.between(ahora, fechaVencimiento) < DIAS_ALERTA_CADUCIDAD) {
+            return EstadoConservacion.POR_VENCER;
+        }
+        return EstadoConservacion.VIGENTE;
+    }
+
+    private String normalizar(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        return Normalizer.normalize(texto.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase();
+    }
+
+    private ProductoInventarioDTO toProductoInventario(DetalleDonacion detalle, LocalDateTime ahora) {
+        return ProductoInventarioDTO.builder()
+                .idDetalle(detalle.getIdDetalle())
+                .idDonacion(detalle.getDonacion().getIdDonacion())
+                .codigoSeguimiento(detalle.getDonacion().getCodigoSeguimiento())
+                .idCategoria(detalle.getCategoria().getIdCategoria())
+                .nombreCategoria(detalle.getCategoria().getNombreCategoria())
+                .descripcionDetalle(detalle.getDescripcionDetalle())
+                .cantidad(detalle.getCantidadVerificada() != null ? detalle.getCantidadVerificada() : BigDecimal.ZERO)
+                .unidadMedida(detalle.getCategoria().getUnidadMedCate())
+                .requiereRefrigeracion(detalle.getCategoria().getRefrigerar())
+                .fechaVencimiento(detalle.getFechaVencimiento())
+                .estadoConservacion(clasificarConservacion(detalle.getFechaVencimiento(), ahora).name())
+                .build();
     }
 
     private String clasificarIncidencia(BigDecimal verificada, BigDecimal declarada) {

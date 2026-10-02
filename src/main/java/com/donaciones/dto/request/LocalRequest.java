@@ -5,6 +5,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,9 +48,9 @@ public class LocalRequest {
     @DecimalMin(value = "0.0", inclusive = false, message = "La capacidad en m3 debe ser mayor a 0")
     private Double capacidadLocalM3;
 
-    @Schema(example = "4455667")
+    @Schema(example = "987654321")
     @NotBlank(message = "El teléfono del local es obligatorio")
-    @Size(max = 20, message = "El teléfono no debe superar los 20 caracteres")
+    @Pattern(regexp = "\\d{9}", message = "El teléfono debe tener exactamente 9 dígitos")
     private String telefonoLocal;
 
 }
