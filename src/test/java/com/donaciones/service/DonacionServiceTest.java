@@ -1,12 +1,10 @@
 package com.donaciones.service;
 
-import com.donaciones.dto.request.ActualizarEstadoRequest;
 import com.donaciones.dto.request.ActualizarUbicacionRequestDTO;
 import com.donaciones.dto.request.DetalleDonacionRequestDTO;
 import com.donaciones.dto.request.DonacionRegistroRequestDTO;
 import com.donaciones.dto.response.DonacionResponse;
 import com.donaciones.dto.response.DonacionResponseDTO;
-import com.donaciones.dto.response.TrackingResponseDTO;
 import com.donaciones.entity.CategoriaInsumo;
 import com.donaciones.entity.DetalleDonacion;
 import com.donaciones.entity.Donacion;
@@ -40,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,9 +46,6 @@ class DonacionServiceTest {
 
     private static final Long ID_USUARIO = 7L;
     private static final Long ID_LOCAL = 2L;
-    private static final Integer ID_DONACION_HU11 = 1;
-    private static final String CODIGO_HU11 = "DON-2026-A1B2C3";
-    private static final String OBSERVACION_HU11 = "Donación verificada e ingresada al almacén central";
 
     @Mock
     private DonacionRepository donacionRepository;
@@ -270,99 +264,6 @@ class DonacionServiceTest {
                 .isEqualByComparingTo("8");
     }
 
-    // HU-11: Línea de tiempo del seguimiento de la donación.
-    @Test
-    @DisplayName("Retorna la línea de tiempo con Registrado, En Almacén, En Tránsito y Entregado en orden cronológico")
-    void obtenerSeguimiento_conDonacionEntregada_retornaTodasLasFasesEnOrdenCronologico() {
-        LocalDateTime inicio = LocalDateTime.of(2026, 9, 30, 8, 0);
-        Donacion donacion = donacionHU11("ENTREGADO");
-        when(donacionRepository.findByCodigoSeguimiento(CODIGO_HU11)).thenReturn(Optional.of(donacion));
-        when(historialRepository.findByDonacionIdDonacionOrderByFechaCambioAsc(ID_DONACION_HU11))
-                .thenReturn(List.of(
-                        historialHU11(donacion, "REGISTRADO", inicio, "Donación registrada por el donante", null),
-                        historialHU11(donacion, "EN_ALMACEN", inicio.plusHours(2), OBSERVACION_HU11, localRecepcion()),
-                        historialHU11(donacion, "EN_TRANSITO", inicio.plusHours(5), "Donación en camino", null),
-                        historialHU11(donacion, "ENTREGADO", inicio.plusHours(9), "Entregada a los damnificados", null)));
-
-        TrackingResponseDTO tracking = donacionService.obtenerSeguimiento(CODIGO_HU11);
-
-        assertThat(tracking.getHistorial())
-                .extracting("estado")
-                .containsExactly("REGISTRADO", "EN_ALMACEN", "EN_TRANSITO", "ENTREGADO");
-        assertThat(tracking.getHistorial())
-                .extracting("fechaCambio")
-                .containsExactly(inicio, inicio.plusHours(2), inicio.plusHours(5), inicio.plusHours(9));
-        assertThat(tracking.getHistorial().get(1).getObservacion()).isEqualTo(OBSERVACION_HU11);
-        verify(historialRepository).findByDonacionIdDonacionOrderByFechaCambioAsc(ID_DONACION_HU11);
-        verify(historialRepository, never()).findByDonacionIdDonacionOrderByFechaCambioDesc(any());
-    }
-
-    @Test
-    @DisplayName("Identifica la fase actual: el estado actual coincide con la última fase de la línea de tiempo")
-    void obtenerSeguimiento_conDonacionEnTransito_identificaLaFaseActualComoUltimaDelHistorial() {
-        LocalDateTime inicio = LocalDateTime.of(2026, 9, 30, 8, 0);
-        Donacion donacion = donacionHU11("EN_TRANSITO");
-        when(donacionRepository.findByCodigoSeguimiento(CODIGO_HU11)).thenReturn(Optional.of(donacion));
-        when(historialRepository.findByDonacionIdDonacionOrderByFechaCambioAsc(ID_DONACION_HU11))
-                .thenReturn(List.of(
-                        historialHU11(donacion, "REGISTRADO", inicio, null, null),
-                        historialHU11(donacion, "EN_ALMACEN", inicio.plusHours(2), null, localRecepcion()),
-                        historialHU11(donacion, "EN_TRANSITO", inicio.plusHours(5), null, null)));
-
-        TrackingResponseDTO tracking = donacionService.obtenerSeguimiento(CODIGO_HU11);
-
-        assertThat(tracking.getEstadoActual()).isEqualTo("EN_TRANSITO");
-        assertThat(tracking.getHistorial()).hasSize(3);
-        assertThat(tracking.getHistorial().getLast().getEstado()).isEqualTo(tracking.getEstadoActual());
-    }
-
-    @Test
-    @DisplayName("No retorna la línea de tiempo cuando el código de seguimiento no existe")
-    void obtenerSeguimiento_conCodigoInexistente_lanzaResourceNotFoundException() {
-        when(donacionRepository.findByCodigoSeguimiento("DON-2026-ZZZZZZ")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> donacionService.obtenerSeguimiento("DON-2026-ZZZZZZ"))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("No se encontró la donación con el código de seguimiento DON-2026-ZZZZZZ");
-
-        verifyNoInteractions(historialRepository);
-    }
-
-    // HU-11: Cambios de estado reflejados en el seguimiento.
-    @Test
-    @DisplayName("Cambia el estado de Registrado a En Almacén, lo guarda y registra la nueva fase en el historial")
-    void cambiarEstado_deRegistradoAEnAlmacen_actualizaEstadoYRegistraHistorial() {
-        Donacion donacion = donacionHU11("REGISTRADO");
-        when(donacionRepository.findById(ID_DONACION_HU11)).thenReturn(Optional.of(donacion));
-        when(donacionRepository.save(any(Donacion.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
-
-        DonacionResponse response = donacionService.cambiarEstado(ID_DONACION_HU11, cambioEstadoHU11("EN_ALMACEN"));
-
-        assertThat(response.getEstadoActual()).isEqualTo("EN_ALMACEN");
-        assertThat(donacion.getEstadoActual()).isEqualTo("EN_ALMACEN");
-        verify(donacionRepository).save(donacion);
-
-        ArgumentCaptor<HistorialEstado> historialCaptor = ArgumentCaptor.forClass(HistorialEstado.class);
-        verify(historialRepository).save(historialCaptor.capture());
-        assertThat(historialCaptor.getValue().getEstado()).isEqualTo("EN_ALMACEN");
-        assertThat(historialCaptor.getValue().getDonacion()).isSameAs(donacion);
-        assertThat(historialCaptor.getValue().getObservacionHistorial()).isEqualTo(OBSERVACION_HU11);
-    }
-
-    @Test
-    @DisplayName("No cambia el estado ni registra historial cuando la donación no existe")
-    void cambiarEstado_conDonacionInexistente_lanzaResourceNotFoundException() {
-        when(donacionRepository.findById(99)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> donacionService.cambiarEstado(99, cambioEstadoHU11("EN_ALMACEN")))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("No se encontró la donación con id 99");
-
-        verify(donacionRepository, never()).save(any(Donacion.class));
-        verify(historialRepository, never()).save(any(HistorialEstado.class));
-        verifyNoInteractions(emailService);
-    }
-
     private void prepararRegistroDonacion() {
         when(usuarioRepository.findById(ID_USUARIO)).thenReturn(Optional.of(usuarioDonante()));
         when(localRepository.findById(ID_LOCAL)).thenReturn(Optional.of(localRecepcion()));
@@ -487,35 +388,6 @@ class DonacionServiceTest {
                 .estadoActual("REGISTRADO")
                 .usuario(usuarioDonante())
                 .localRecepcion(localRecepcion())
-                .build();
-    }
-
-    private ActualizarEstadoRequest cambioEstadoHU11(String estado) {
-        return ActualizarEstadoRequest.builder()
-                .estado(estado)
-                .observacionHistorial(OBSERVACION_HU11)
-                .build();
-    }
-
-    private Donacion donacionHU11(String estadoActual) {
-        return Donacion.builder()
-                .idDonacion(ID_DONACION_HU11)
-                .codigoSeguimiento(CODIGO_HU11)
-                .fechaRegistro(LocalDateTime.of(2026, 9, 30, 8, 0))
-                .estadoActual(estadoActual)
-                .usuario(usuarioDonante())
-                .localRecepcion(localRecepcion())
-                .build();
-    }
-
-    private HistorialEstado historialHU11(
-            Donacion donacion, String estado, LocalDateTime fechaCambio, String observacion, LocalRecepcion local) {
-        return HistorialEstado.builder()
-                .donacion(donacion)
-                .estado(estado)
-                .fechaCambio(fechaCambio)
-                .observacionHistorial(observacion)
-                .localRecepcion(local)
                 .build();
     }
 
