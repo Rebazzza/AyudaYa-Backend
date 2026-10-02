@@ -32,4 +32,6 @@ public class DetalleDonacionResponse {
 
     private String observacionDetalle;
 
+    private Boolean activo;
+
 }

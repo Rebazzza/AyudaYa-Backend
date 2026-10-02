@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -54,5 +55,19 @@ public class DetalleDonacion {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_Categoria", nullable = false)
     private CategoriaInsumo categoria;
+
+    /**
+     * Baja lógica: el registro nunca se borra de la base de datos, solo deja de considerarse activo.
+     */
+    @Builder.Default
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = true;
+
+    @PrePersist
+    public void prePersist() {
+        if (activo == null) {
+            activo = true;
+        }
+    }
 
 }

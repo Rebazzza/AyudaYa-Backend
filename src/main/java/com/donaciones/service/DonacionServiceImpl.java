@@ -127,6 +127,27 @@ public class DonacionServiceImpl implements DonacionService {
         donacionRepository.delete(donacion);
     }
 
+    /**
+     * Baja lógica de un producto donado: el registro permanece en la base de datos y solo se marca
+     * como inactivo, por lo que deja de aparecer en los listados y en el inventario del local.
+     */
+    @Override
+    @Transactional
+    public DetalleDonacionResponse darDeBajaProducto(Integer idDonacion, Integer idDetalle) {
+        Donacion donacion = findByIdOrThrow(idDonacion);
+        DetalleDonacion detalle = donacion.getDetalles().stream()
+                .filter(registro -> registro.getIdDetalle().equals(idDetalle))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontró el producto con id " + idDetalle + " en la donación " + idDonacion));
+        if (!Boolean.TRUE.equals(detalle.getActivo())) {
+            throw new BadRequestException("El producto con id " + idDetalle + " ya se encuentra dado de baja");
+        }
+        detalle.setActivo(false);
+        donacionRepository.save(donacion);
+        return toDetalleResponse(detalle);
+    }
+
     @Override
     @Transactional
     public DonacionResponseDTO registrarDonacion(DonacionRegistroRequestDTO dto) {
@@ -346,9 +367,7 @@ public class DonacionServiceImpl implements DonacionService {
     }
 
     private DonacionResponse toResponse(Donacion donacion) {
-        List<DetalleDonacionResponse> detalles = donacion.getDetalles().stream()
-                .map(this::toDetalleResponse)
-                .toList();
+        List<DetalleDonacionResponse> detalles = toDetalleResponses(donacion);
 
         return DonacionResponse.builder()
                 .idDonacion(donacion.getIdDonacion())
@@ -371,9 +390,7 @@ public class DonacionServiceImpl implements DonacionService {
     }
 
     private DonacionResponseDTO toResponseDto(Donacion donacion) {
-        List<DetalleDonacionResponse> detalles = donacion.getDetalles().stream()
-                .map(this::toDetalleResponse)
-                .toList();
+        List<DetalleDonacionResponse> detalles = toDetalleResponses(donacion);
 
         return DonacionResponseDTO.builder()
                 .idDonacion(donacion.getIdDonacion())
@@ -413,6 +430,13 @@ public class DonacionServiceImpl implements DonacionService {
                 .build();
     }
 
+    private List<DetalleDonacionResponse> toDetalleResponses(Donacion donacion) {
+        return donacion.getDetalles().stream()
+                .filter(detalle -> Boolean.TRUE.equals(detalle.getActivo()))
+                .map(this::toDetalleResponse)
+                .toList();
+    }
+
     private DetalleDonacionResponse toDetalleResponse(DetalleDonacion detalle) {
         return DetalleDonacionResponse.builder()
                 .idDetalle(detalle.getIdDetalle())
@@ -423,6 +447,7 @@ public class DonacionServiceImpl implements DonacionService {
                 .cantidadVerificada(detalle.getCantidadVerificada())
                 .fechaVencimiento(detalle.getFechaVencimiento())
                 .observacionDetalle(detalle.getObservacionDetalle())
+                .activo(detalle.getActivo())
                 .build();
     }
 

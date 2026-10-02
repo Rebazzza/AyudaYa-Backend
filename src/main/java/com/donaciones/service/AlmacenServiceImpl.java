@@ -68,6 +68,9 @@ public class AlmacenServiceImpl implements AlmacenService {
                 .collect(Collectors.toMap(ItemCorroboracionRequestDTO::getIdDetalle, Function.identity()));
 
         for (DetalleDonacion detalle : donacion.getDetalles()) {
+            if (!Boolean.TRUE.equals(detalle.getActivo())) {
+                continue;
+            }
             ItemCorroboracionRequestDTO item = solicitados.get(detalle.getIdDetalle());
             if (item == null) {
                 throw new BadRequestException("Todos los insumos deben ser verificados");
@@ -92,11 +95,14 @@ public class AlmacenServiceImpl implements AlmacenService {
                 .build();
         historialRepository.save(historial);
 
-        long incidencias = donacion.getDetalles().stream()
+        List<DetalleDonacion> activos = donacion.getDetalles().stream()
+                .filter(detalle -> Boolean.TRUE.equals(detalle.getActivo()))
+                .toList();
+        long incidencias = activos.stream()
                 .filter(detalle -> detalle.getObservacionDetalle() != null
                         && !CONFORME.equals(detalle.getObservacionDetalle()))
                 .count();
-        if (incidencias > donacion.getDetalles().size() / 2.0) {
+        if (incidencias > activos.size() / 2.0) {
             notificarAdministradores(donacion);
         }
 
@@ -107,8 +113,9 @@ public class AlmacenServiceImpl implements AlmacenService {
     @Transactional(readOnly = true)
     public List<ResumenInventarioDTO> obtenerInventarioPorLocal(Long idLocal) {
         List<DetalleDonacion> detalles = detalleRepository
-                .findByDonacionEstadoActualAndDonacionLocalRecepcionIdLocal(ESTADO_EN_ALMACEN, idLocal);
+                .findByDonacionEstadoActualAndDonacionLocalRecepcionIdLocalAndActivoTrue(ESTADO_EN_ALMACEN, idLocal);
         return detalles.stream()
+                .filter(detalle -> Boolean.TRUE.equals(detalle.getCategoria().getActivo()))
                 .collect(Collectors.groupingBy(detalle -> detalle.getCategoria().getIdCategoria()))
                 .values()
                 .stream()
@@ -122,8 +129,9 @@ public class AlmacenServiceImpl implements AlmacenService {
     public List<AlertaCaducidadDTO> obtenerAlertasCaducidad(Long idLocal) {
         LocalDateTime ahora = LocalDateTime.now();
         return detalleRepository
-                .findByDonacionEstadoActualAndDonacionLocalRecepcionIdLocal(ESTADO_EN_ALMACEN, idLocal)
+                .findByDonacionEstadoActualAndDonacionLocalRecepcionIdLocalAndActivoTrue(ESTADO_EN_ALMACEN, idLocal)
                 .stream()
+                .filter(detalle -> Boolean.TRUE.equals(detalle.getCategoria().getActivo()))
                 .filter(detalle -> detalle.getFechaVencimiento() != null && detalle.getCantidadVerificada() != null)
                 .map(detalle -> {
                     long dias = ChronoUnit.DAYS.between(ahora, detalle.getFechaVencimiento());

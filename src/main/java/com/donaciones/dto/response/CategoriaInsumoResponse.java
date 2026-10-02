@@ -21,4 +21,6 @@ public class CategoriaInsumoResponse {
 
     private Boolean refrigerar;
 
+    private Boolean activo;
+
 }

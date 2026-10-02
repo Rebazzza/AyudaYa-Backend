@@ -36,10 +36,20 @@ public class CategoriaInsumo {
     @Column(name = "refrigerar", nullable = false)
     private Boolean refrigerar;
 
+    /**
+     * Baja lógica: la categoría nunca se borra de la base de datos, solo deja de listarse en el formulario.
+     */
+    @Builder.Default
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = true;
+
     @PrePersist
     public void prePersist() {
         if (refrigerar == null) {
             refrigerar = false;
+        }
+        if (activo == null) {
+            activo = true;
         }
     }
 

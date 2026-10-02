@@ -3,6 +3,7 @@ package com.donaciones.service;
 import com.donaciones.dto.request.CategoriaInsumoRequest;
 import com.donaciones.dto.response.CategoriaInsumoResponse;
 import com.donaciones.entity.CategoriaInsumo;
+import com.donaciones.exception.BadRequestException;
 import com.donaciones.exception.DuplicateResourceException;
 import com.donaciones.exception.ResourceNotFoundException;
 import com.donaciones.repository.CategoriaInsumoRepository;
@@ -21,6 +22,16 @@ public class CategoriaInsumoService {
     @Transactional(readOnly = true)
     public List<CategoriaInsumoResponse> list() {
         return categoriaRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /**
+     * Categorías disponibles para el formulario de registro de productos: solo las activas.
+     */
+    @Transactional(readOnly = true)
+    public List<CategoriaInsumoResponse> listActive() {
+        return categoriaRepository.findByActivoTrue().stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -65,6 +76,20 @@ public class CategoriaInsumoService {
         categoriaRepository.delete(categoria);
     }
 
+    /**
+     * Baja lógica de la categoría: deja de listarse en el formulario y en el inventario, pero el
+     * registro se conserva en la base de datos y sus productos asociados no pierden integridad.
+     */
+    @Transactional
+    public CategoriaInsumoResponse deshabilitar(Integer id) {
+        CategoriaInsumo categoria = findByIdOrThrow(id);
+        if (!Boolean.TRUE.equals(categoria.getActivo())) {
+            throw new BadRequestException("La categoría con id " + id + " ya se encuentra deshabilitada");
+        }
+        categoria.setActivo(false);
+        return toResponse(categoriaRepository.save(categoria));
+    }
+
     private CategoriaInsumo findByIdOrThrow(Integer id) {
         return categoriaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la categoría con id " + id));
@@ -76,6 +101,7 @@ public class CategoriaInsumoService {
                 .nombreCategoria(categoria.getNombreCategoria())
                 .unidadMedCate(categoria.getUnidadMedCate())
                 .refrigerar(categoria.getRefrigerar())
+                .activo(categoria.getActivo())
                 .build();
     }
 

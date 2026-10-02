@@ -31,11 +31,21 @@ public class CategoriaInsumoController {
     private final CategoriaInsumoService categoriaService;
 
     @GetMapping
-    @Operation(summary = "Listar categorías", description = "Devuelve todas las categorías de insumos.")
+    @Operation(summary = "Listar categorías", description = "Devuelve todas las categorías de insumos, incluidas las deshabilitadas.")
     public ResponseEntity<ApiResponseDTO<List<CategoriaInsumoResponse>>> list(HttpServletRequest servletRequest) {
         List<CategoriaInsumoResponse> categorias = categoriaService.list();
         ApiResponseDTO<List<CategoriaInsumoResponse>> body = ApiResponseDTO.success(HttpStatus.OK,
                 "Categorías obtenidas exitosamente", servletRequest.getRequestURI(), categorias);
+        return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/activas")
+    @Operation(summary = "Listar categorías activas",
+            description = "Devuelve solo las categorías activas, para poblar el desplegable al registrar un producto.")
+    public ResponseEntity<ApiResponseDTO<List<CategoriaInsumoResponse>>> listActive(HttpServletRequest servletRequest) {
+        List<CategoriaInsumoResponse> categorias = categoriaService.listActive();
+        ApiResponseDTO<List<CategoriaInsumoResponse>> body = ApiResponseDTO.success(HttpStatus.OK,
+                "Categorías activas obtenidas exitosamente", servletRequest.getRequestURI(), categorias);
         return ResponseEntity.ok(body);
     }
 
@@ -76,6 +86,18 @@ public class CategoriaInsumoController {
         categoriaService.delete(id);
         ApiResponseDTO<Void> body = ApiResponseDTO.success(HttpStatus.OK,
                 "Categoría eliminada exitosamente", servletRequest.getRequestURI(), null);
+        return ResponseEntity.ok(body);
+    }
+
+    @PutMapping("/{id}/deshabilitar")
+    @Operation(summary = "Deshabilitar categoría",
+            description = "Aplica baja lógica: la categoría queda inactiva, deja de listarse en el formulario "
+                    + "y en el inventario, pero el registro se conserva en la base de datos.")
+    public ResponseEntity<ApiResponseDTO<CategoriaInsumoResponse>> deshabilitar(@PathVariable Integer id,
+                                                                                HttpServletRequest servletRequest) {
+        CategoriaInsumoResponse categoria = categoriaService.deshabilitar(id);
+        ApiResponseDTO<CategoriaInsumoResponse> body = ApiResponseDTO.success(HttpStatus.OK,
+                "Categoría deshabilitada exitosamente", servletRequest.getRequestURI(), categoria);
         return ResponseEntity.ok(body);
     }
 

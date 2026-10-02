@@ -4,6 +4,7 @@ import com.donaciones.dto.request.ActualizarEstadoRequest;
 import com.donaciones.dto.request.ActualizarUbicacionRequestDTO;
 import com.donaciones.dto.request.DonacionRegistroRequestDTO;
 import com.donaciones.dto.request.DonacionRequest;
+import com.donaciones.dto.response.DetalleDonacionResponse;
 import com.donaciones.dto.response.DonacionResponse;
 import com.donaciones.dto.response.DonacionResponseDTO;
 import com.donaciones.dto.response.TrackingResponseDTO;
@@ -24,6 +25,8 @@ public interface DonacionService {
     DonacionResponse cambiarEstado(Integer id, ActualizarEstadoRequest request);
 
     void delete(Integer id);
+
+    DetalleDonacionResponse darDeBajaProducto(Integer idDonacion, Integer idDetalle);
 
     DonacionResponseDTO registrarDonacion(DonacionRegistroRequestDTO dto);
 

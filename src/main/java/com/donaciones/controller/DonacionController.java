@@ -4,6 +4,7 @@ import com.donaciones.dto.ApiResponseDTO;
 import com.donaciones.dto.request.ActualizarEstadoRequest;
 import com.donaciones.dto.request.DonacionRegistroRequestDTO;
 import com.donaciones.dto.request.DonacionRequest;
+import com.donaciones.dto.response.DetalleDonacionResponse;
 import com.donaciones.dto.response.DonacionResponse;
 import com.donaciones.dto.response.DonacionResponseDTO;
 import com.donaciones.dto.response.TrackingResponseDTO;
@@ -150,6 +151,20 @@ public class DonacionController {
         DonacionResponseDTO donacion = donacionService.anularDonacion(id, idUsuario);
         ApiResponseDTO<DonacionResponseDTO> body = ApiResponseDTO.success(HttpStatus.OK,
                 "Donación anulada exitosamente", servletRequest.getRequestURI(), donacion);
+        return ResponseEntity.ok(body);
+    }
+
+    @DeleteMapping("/{id}/productos/{idDetalle}")
+    @Operation(summary = "Dar de baja un producto donado",
+            description = "Aplica baja lógica sobre un producto: cambia su estado a inactivo y deja de mostrarse, "
+                    + "pero el registro se conserva en la base de datos.")
+    public ResponseEntity<ApiResponseDTO<DetalleDonacionResponse>> darDeBajaProducto(
+            @PathVariable Integer id,
+            @PathVariable Integer idDetalle,
+            HttpServletRequest servletRequest) {
+        DetalleDonacionResponse producto = donacionService.darDeBajaProducto(id, idDetalle);
+        ApiResponseDTO<DetalleDonacionResponse> body = ApiResponseDTO.success(HttpStatus.OK,
+                "Producto dado de baja exitosamente", servletRequest.getRequestURI(), producto);
         return ResponseEntity.ok(body);
     }
 
