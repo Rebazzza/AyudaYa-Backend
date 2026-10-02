@@ -22,4 +22,6 @@ public interface DonacionRepository extends JpaRepository<Donacion, Integer> {
 
     List<Donacion> findByUsuarioIdUsuarioAndEstadoActual(Long idUsuario, String estado);
 
+    long countByLocalRecepcionIdLocalAndEstadoActual(Long idLocal, String estado);
+
 }

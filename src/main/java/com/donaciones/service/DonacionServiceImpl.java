@@ -45,6 +45,7 @@ public class DonacionServiceImpl implements DonacionService {
 
     private static final String ESTADO_REGISTRADO = "REGISTRADO";
     private static final String ESTADO_ANULADO = "ANULADO";
+    private static final String ESTADO_EN_ALMACEN = "EN_ALMACEN";
 
     private final DonacionRepository donacionRepository;
     private final UsuarioRepository usuarioRepository;
@@ -129,11 +130,14 @@ public class DonacionServiceImpl implements DonacionService {
     @Override
     @Transactional
     public DonacionResponseDTO registrarDonacion(DonacionRegistroRequestDTO dto) {
+        LocalRecepcion local = findLocal(dto.getIdLocalRecepcion());
+        validarCapacidadDisponible(local);
+
         Donacion donacion = Donacion.builder()
                 .codigoSeguimiento(generarCodigoSeguimiento())
                 .estadoActual(ESTADO_REGISTRADO)
                 .usuario(findUsuario(dto.getIdUsuario()))
-                .localRecepcion(findLocal(dto.getIdLocalRecepcion()))
+                .localRecepcion(local)
                 .build();
         dto.getDetalles().forEach(detalleRequest -> donacion.addDetalle(buildDetalle(detalleRequest)));
         donacionRepository.save(donacion);
@@ -275,6 +279,24 @@ public class DonacionServiceImpl implements DonacionService {
     private LocalRecepcion findLocal(Long id) {
         return localRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el local con id " + id));
+    }
+
+    /**
+     * Bloquea el registro de una nueva donación cuando el local elegido ya alcanzó su capacidad.
+     * La ocupación se estima contando las donaciones en estado EN_ALMACEN de ese local, ya que el
+     * esquema no registra un volumen en m3 por donación ni por categoría de insumo.
+     * Si el local no tiene capacidadLocalM3 registrada, se omite el bloqueo (no se puede evaluar).
+     */
+    private void validarCapacidadDisponible(LocalRecepcion local) {
+        if (local.getCapacidadLocalM3() == null) {
+            return;
+        }
+        long ocupadas = donacionRepository.countByLocalRecepcionIdLocalAndEstadoActual(
+                local.getIdLocal(), ESTADO_EN_ALMACEN);
+        if (ocupadas >= local.getCapacidadLocalM3()) {
+            throw new BadRequestException(
+                    "El local " + local.getNombreLocal() + " alcanzó su capacidad máxima y no puede recibir nuevas donaciones");
+        }
     }
 
     private Trabajador findTrabajador(Integer id) {

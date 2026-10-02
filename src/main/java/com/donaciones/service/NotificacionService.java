@@ -65,6 +65,17 @@ public class NotificacionService {
     }
 
     @Transactional
+    public int marcarTodoLeido(Long idUsuario) {
+        List<Notificacion> pendientes = notificacionRepository.findByUsuarioIdUsuarioAndLeidoFalse(idUsuario);
+        if (pendientes.isEmpty()) {
+            return 0;
+        }
+        pendientes.forEach(notificacion -> notificacion.setLeido(true));
+        notificacionRepository.saveAll(pendientes);
+        return pendientes.size();
+    }
+
+    @Transactional
     public void delete(Integer id) {
         Notificacion notificacion = findByIdOrThrow(id);
         notificacionRepository.delete(notificacion);
