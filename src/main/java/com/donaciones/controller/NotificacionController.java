@@ -72,6 +72,17 @@ public class NotificacionController {
         return ResponseEntity.ok(body);
     }
 
+    @PutMapping("/usuario/{idUsuario}/leido-todo")
+    @Operation(summary = "Marcar todas las notificaciones de un usuario como leídas",
+            description = "Marca como leídas (leido = true) todas las notificaciones pendientes del usuario indicado. Devuelve la cantidad de notificaciones actualizadas.")
+    public ResponseEntity<ApiResponseDTO<Integer>> marcarTodoLeido(@PathVariable Long idUsuario,
+                                                                    HttpServletRequest servletRequest) {
+        int actualizadas = notificacionService.marcarTodoLeido(idUsuario);
+        ApiResponseDTO<Integer> body = ApiResponseDTO.success(HttpStatus.OK,
+                "Notificaciones marcadas como leídas", servletRequest.getRequestURI(), actualizadas);
+        return ResponseEntity.ok(body);
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar notificación", description = "Elimina una notificación.")
     public ResponseEntity<ApiResponseDTO<Void>> delete(@PathVariable Integer id, HttpServletRequest servletRequest) {

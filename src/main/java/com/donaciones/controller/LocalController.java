@@ -2,6 +2,7 @@ package com.donaciones.controller;
 
 import com.donaciones.dto.ApiResponseDTO;
 import com.donaciones.dto.request.LocalRequest;
+import com.donaciones.dto.response.LocalCapacidadResponseDTO;
 import com.donaciones.dto.response.LocalResponse;
 import com.donaciones.service.LocalService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +48,18 @@ public class LocalController {
         LocalResponse local = localService.getById(id);
         ApiResponseDTO<LocalResponse> body = ApiResponseDTO.success(HttpStatus.OK,
                 "Local obtenido exitosamente", servletRequest.getRequestURI(), local);
+        return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/{id}/capacidad")
+    @Operation(summary = "Consultar capacidad de un local",
+            description = "Devuelve la capacidad declarada (capacidadLocalM3) junto con la ocupación estimada "
+                    + "a partir de las donaciones en estado EN_ALMACEN de ese local, y si el local está lleno.")
+    public ResponseEntity<ApiResponseDTO<LocalCapacidadResponseDTO>> obtenerCapacidad(@PathVariable Long id,
+                                                                                      HttpServletRequest servletRequest) {
+        LocalCapacidadResponseDTO capacidad = localService.obtenerCapacidad(id);
+        ApiResponseDTO<LocalCapacidadResponseDTO> body = ApiResponseDTO.success(HttpStatus.OK,
+                "Capacidad del local obtenida exitosamente", servletRequest.getRequestURI(), capacidad);
         return ResponseEntity.ok(body);
     }
 
